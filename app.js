@@ -130,7 +130,7 @@ class Gallery {
         // Handle keyboard events
         window.addEventListener("keydown", (e) => this.keys[e.key] = true);
         window.addEventListener("keyup", (e) => this.keys[e.key] = false);
-        
+    
         // Handle window resize
         window.addEventListener("resize", () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
@@ -138,20 +138,20 @@ class Gallery {
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         });
     
-        // Add click and touch event listeners to the blocker
+        // Blocker element
         const blocker = document.getElementById('blocker');
         const instructions = document.getElementById('instructions');
     
         const hideBlocker = (event) => {
-            event.preventDefault(); // Prevent default browser behavior
+            event.preventDefault(); // Prevent default behavior like scrolling
             if (!this.isPointerLocked) {
                 this.enterPointerLock();
             }
         };
     
-        // Add both click and touchstart listeners
+        // Attach both click and touchstart events
         blocker.addEventListener('click', hideBlocker);
-        blocker.addEventListener('touchstart', hideBlocker, { passive: false }); // Set passive to false to allow preventDefault
+        blocker.addEventListener('touchstart', hideBlocker, { passive: false }); // For touch
     
         // Pointer lock change
         document.addEventListener('pointerlockchange', () => {
@@ -164,6 +164,14 @@ class Gallery {
             }
         });
     
+        // Instructions element click/touch
+        instructions.addEventListener('click', () => {
+            this.enterPointerLock();
+        });
+        instructions.addEventListener('touchstart', () => {
+            this.enterPointerLock();
+        }, { passive: false });
+    
         // Music controls
         window.addEventListener("keydown", (e) => {
             if (e.key === 'n') {
@@ -172,20 +180,9 @@ class Gallery {
                 this.previousTrack();
             }
         });
-    
-        // Click or touch instructions to enter pointer lock
-        instructions.addEventListener('click', () => {
-            this.enterPointerLock();
-        });
-    
-        // Optional button for toggling controls
-        const toggleControlsButton = document.getElementById("toggle-controls");
-        if (toggleControlsButton) {
-            toggleControlsButton.addEventListener("click", () => this.toggleControls());
-        }
     }
     
-    // Methods to handle pointer lock enable/disable
+    // Handle pointer lock enable/disable
     onPointerLockEnable() {
         this.isMovementEnabled = true;
         document.addEventListener('mousemove', this.onMouseMove.bind(this));
@@ -208,10 +205,8 @@ class Gallery {
                 this.keys[key] = false;
             }
         }
-    }
+    }    
     
-    
-
     nextTrack() {
         this.audioTracks[this.currentTrackIndex].pause();
         this.currentTrackIndex = (this.currentTrackIndex + 1) % this.audioTracks.length;
