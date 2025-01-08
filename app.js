@@ -240,20 +240,23 @@ class Gallery {
         const joystickZone = document.createElement('div');
         joystickZone.id = 'joystick-zone';
         joystickZone.style.position = 'absolute';
-        joystickZone.style.bottom = '20px';
-        joystickZone.style.left = '20px';
-        joystickZone.style.width = '150px';
-        joystickZone.style.height = '150px';
+        joystickZone.style.bottom = '5%'; // Position relative to screen height
+        joystickZone.style.left = '5%'; // Position relative to screen width
+        joystickZone.style.width = '15%'; // Width relative to screen width
+        joystickZone.style.height = '15%'; // Height relative to screen height
         joystickZone.style.zIndex = '10';
         joystickZone.style.display = 'none'; // Initially hidden
         document.body.appendChild(joystickZone);
+    
+        // Calculate size dynamically based on the zone size
+        const joystickSize = Math.min(window.innerWidth, window.innerHeight) * 0.15;
     
         // Initialize joystick manager
         this.joystickManager = nipplejs.create({
             zone: joystickZone,
             mode: 'static',
-            position: { left: '75px', top: '75px' }, // Center inside the joystick zone
-            size: 150, // Ensure correct size
+            position: { left: '50%', top: '50%' }, // Center joystick within the zone
+            size: joystickSize, // Dynamic size relative to screen dimensions
             color: 'blue',
         });
     
@@ -265,8 +268,8 @@ class Gallery {
     
                 // Calculate movement based on angle and distance
                 const radians = angle * (Math.PI / 180);
-                this.touchData.x = Math.cos(radians) * (distance / 50);
-                this.touchData.y = Math.sin(radians) * (distance / 50);
+                this.touchData.x = Math.cos(radians) * (distance / (joystickSize / 10));
+                this.touchData.y = Math.sin(radians) * (distance / (joystickSize / 10));
             }
         });
     
@@ -275,7 +278,13 @@ class Gallery {
             this.touchData.x = 0;
             this.touchData.y = 0;
         });
-    }
+    
+        // Adjust size on window resize
+        window.addEventListener('resize', () => {
+            const newJoystickSize = Math.min(window.innerWidth, window.innerHeight) * 0.15;
+            this.joystickManager.options.size = newJoystickSize;
+        });
+    }    
     
 
     toggleControls() {
