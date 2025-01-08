@@ -142,15 +142,16 @@ class Gallery {
         const blocker = document.getElementById('blocker');
         const instructions = document.getElementById('instructions');
     
-        const hideBlocker = () => {
+        const hideBlocker = (event) => {
+            event.preventDefault(); // Prevent default browser behavior
             if (!this.isPointerLocked) {
                 this.enterPointerLock();
             }
         };
     
-        // Single event for both click and touchstart
+        // Add both click and touchstart listeners
         blocker.addEventListener('click', hideBlocker);
-        blocker.addEventListener('touchstart', hideBlocker);
+        blocker.addEventListener('touchstart', hideBlocker, { passive: false }); // Set passive to false to allow preventDefault
     
         // Pointer lock change
         document.addEventListener('pointerlockchange', () => {
@@ -172,12 +173,12 @@ class Gallery {
             }
         });
     
-        // Click instructions to enter pointer lock
+        // Click or touch instructions to enter pointer lock
         instructions.addEventListener('click', () => {
             this.enterPointerLock();
         });
     
-        // Toggle controls button
+        // Optional button for toggling controls
         const toggleControlsButton = document.getElementById("toggle-controls");
         if (toggleControlsButton) {
             toggleControlsButton.addEventListener("click", () => this.toggleControls());
@@ -208,6 +209,7 @@ class Gallery {
             }
         }
     }
+    
 
     nextTrack() {
         this.audioTracks[this.currentTrackIndex].pause();
