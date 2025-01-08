@@ -242,8 +242,8 @@ class Gallery {
         joystickZone.style.position = 'absolute';
         joystickZone.style.bottom = '5%'; // Position relative to screen height
         joystickZone.style.left = '5%'; // Position relative to screen width
-        joystickZone.style.width = '15%'; // Width relative to screen width
-        joystickZone.style.height = '15%'; // Height relative to screen height
+        joystickZone.style.width = '30%'; // Width relative to screen width
+        joystickZone.style.height = '30%'; // Height relative to screen height
         joystickZone.style.zIndex = '10';
         joystickZone.style.display = 'none'; // Initially hidden
         document.body.appendChild(joystickZone);
