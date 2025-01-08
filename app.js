@@ -253,7 +253,7 @@ class Gallery {
             zone: joystickZone,
             mode: 'static',
             position: { left: '75px', top: '75px' }, // Center inside the joystick zone
-            size: Math.min(window.innerWidth, window.innerHeight) * 0.1, // 10% of the smaller dimension
+            size: 150, // Size relative to screen
             color: 'blue',
         });
     
