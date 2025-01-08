@@ -236,7 +236,7 @@ class Gallery {
     }
 
     setupJoystick() {
-        // Create joystick zone dynamically
+        // Create joystick manager
         const joystickZone = document.createElement('div');
         joystickZone.id = 'joystick-zone';
         joystickZone.style.position = 'absolute';
@@ -245,27 +245,26 @@ class Gallery {
         joystickZone.style.width = '150px';
         joystickZone.style.height = '150px';
         joystickZone.style.zIndex = '10';
-        joystickZone.style.display = 'none'; // Initially hidden
+        joystickZone.style.display = 'none'; // Hidden initially
         document.body.appendChild(joystickZone);
-    
-        // Initialize joystick using nipplejs
+
         this.joystickManager = nipplejs.create({
             zone: joystickZone,
             mode: 'static',
-            position: { left: '75px', top: '75px' },
+            position: { left: '50%', top: '50%' },
             color: 'blue',
-            size: 150,
         });
-    
+
         this.joystickManager.on('move', (evt, data) => {
-            if (data.distance > 0) {
-                const angle = data.angle.radian;
-                const normalizedDistance = Math.min(data.distance / 50, 1); // Limit distance for smoother control
-                this.touchData.x = Math.cos(angle) * normalizedDistance;
-                this.touchData.y = Math.sin(angle) * normalizedDistance;
-            }
+            const angle = data.angle.degree;
+            const distance = data.distance;
+
+            // Normalize movement to a unit vector
+            const radians = angle * (Math.PI / 180);
+            this.touchData.x = Math.cos(radians) * (distance / 50);
+            this.touchData.y = Math.sin(radians) * (distance / 50);
         });
-    
+
         this.joystickManager.on('end', () => {
             this.touchData.x = 0;
             this.touchData.y = 0;
@@ -274,71 +273,61 @@ class Gallery {
 
     toggleControls() {
         this.isJoystickActive = !this.isJoystickActive;
-    
+
         const joystickZone = document.getElementById('joystick-zone');
-        joystickZone.style.display = this.isJoystickActive ? 'block' : 'none';
-    
-        const toggleButton = document.getElementById("toggle-controls");
-        toggleButton.textContent = this.isJoystickActive
-            ? "Switch to Keyboard/Mouse Controls"
-            : "Switch to Joystick Controls";
+        if (this.isJoystickActive) {
+            joystickZone.style.display = 'block';
+            document.getElementById("toggle-controls").textContent = "Switch to Keyboard/Mouse Controls";
+        } else {
+            joystickZone.style.display = 'none';
+            document.getElementById("toggle-controls").textContent = "Switch to Joystick Controls";
+        }
     }
-    
 
 
     handleControls() {
         if (!this.isMovementEnabled) return;
-    
+
         const speed = this.keys["Shift"] ? 0.2 : 0.1;
-    
+
         if (this.isJoystickActive) {
-            // Use joystick input for movement
+            // Handle joystick movement
             const forward = new THREE.Vector3();
             this.camera.getWorldDirection(forward);
             forward.y = 0; // Ignore vertical movement
             forward.normalize();
-    
+        
             const right = new THREE.Vector3();
             right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-    
+        
             this.camera.position.add(forward.clone().multiplyScalar(this.touchData.y * speed));
             this.camera.position.add(right.clone().multiplyScalar(this.touchData.x * speed));
-        } else {
-            // Use keyboard input for movement
-            const forward = new THREE.Vector3();
-            this.camera.getWorldDirection(forward);
-            forward.y = 0;
-            forward.normalize();
-    
-            const right = new THREE.Vector3();
-            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-    
+
             if (this.keys["w"]) this.camera.position.add(forward.clone().multiplyScalar(speed));
             if (this.keys["s"]) this.camera.position.add(forward.clone().negate().multiplyScalar(speed));
             if (this.keys["a"]) this.camera.position.add(right.clone().negate().multiplyScalar(speed));
             if (this.keys["d"]) this.camera.position.add(right.clone().multiplyScalar(speed));
         }
-    
+
         // Handle jumping
         if (this.keys[" "] && !this.isJumping) {
             this.isJumping = true;
             this.verticalVelocity = this.jumpStrength;
         }
-    
+
         if (this.isJumping) {
             this.verticalVelocity += this.gravity;
             this.camera.position.y += this.verticalVelocity;
-    
+
             if (this.camera.position.y <= this.groundLevel) {
                 this.camera.position.y = this.groundLevel;
                 this.isJumping = false;
                 this.verticalVelocity = 0;
             }
         }
-    
+
         this.checkCollision();
     }
-    
 
     checkCollision() {
         const halfWidth = this.gallerySize.width / 2;
