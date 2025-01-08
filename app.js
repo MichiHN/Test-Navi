@@ -236,47 +236,40 @@ class Gallery {
     }
 
     setupJoystick() {
-    // Create joystick zone element
-    const joystickZone = document.createElement('div');
-    joystickZone.id = 'joystick-zone';
-    joystickZone.style.position = 'absolute';
-    joystickZone.style.bottom = '20px';
-    joystickZone.style.left = '20px';
-    joystickZone.style.width = '150px';
-    joystickZone.style.height = '150px';
-    joystickZone.style.zIndex = '10';
-    joystickZone.style.display = 'none'; // Initially hidden
-    document.body.appendChild(joystickZone);
+        // Create joystick manager
+        const joystickZone = document.createElement('div');
+        joystickZone.id = 'joystick-zone';
+        joystickZone.style.position = 'absolute';
+        joystickZone.style.bottom = '20px';
+        joystickZone.style.left = '20px';
+        joystickZone.style.width = '150px';
+        joystickZone.style.height = '150px';
+        joystickZone.style.zIndex = '10';
+        joystickZone.style.display = 'none'; // Hidden initially
+        document.body.appendChild(joystickZone);
 
-    // Initialize joystick manager
-    this.joystickManager = nipplejs.create({
-        zone: joystickZone,
-        mode: 'static',
-        position: { left: '75px', top: '75px' }, // Center inside the joystick zone
-        size: 150, // Ensure correct size
-        color: 'blue',
-    });
+        this.joystickManager = nipplejs.create({
+            zone: joystickZone,
+            mode: 'static',
+            position: { left: '50%', top: '50%' },
+            color: 'blue',
+        });
 
-    // Handle joystick movement
-    this.joystickManager.on('move', (evt, data) => {
-        if (data && data.angle) {
+        this.joystickManager.on('move', (evt, data) => {
             const angle = data.angle.degree;
             const distance = data.distance;
 
-            // Calculate movement based on angle and distance
+            // Normalize movement to a unit vector
             const radians = angle * (Math.PI / 180);
             this.touchData.x = Math.cos(radians) * (distance / 50);
             this.touchData.y = Math.sin(radians) * (distance / 50);
-        }
-    });
+        });
 
-    // Reset touch data when joystick is released
-    this.joystickManager.on('end', () => {
-        this.touchData.x = 0;
-        this.touchData.y = 0;
-    });
-}
-
+        this.joystickManager.on('end', () => {
+            this.touchData.x = 0;
+            this.touchData.y = 0;
+        });
+    }
 
     toggleControls() {
         this.isJoystickActive = !this.isJoystickActive;
@@ -299,16 +292,17 @@ class Gallery {
 
         if (this.isJoystickActive) {
             // Handle joystick movement
+            this.camera.position.x += this.touchData.x * speed;
+            this.camera.position.z += this.touchData.y * speed;
+        } else {
+            // Handle keyboard movement
             const forward = new THREE.Vector3();
             this.camera.getWorldDirection(forward);
-            forward.y = 0; // Ignore vertical movement
+            forward.y = 0;
             forward.normalize();
-        
+
             const right = new THREE.Vector3();
             right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-        
-            this.camera.position.add(forward.clone().multiplyScalar(this.touchData.y * speed));
-            this.camera.position.add(right.clone().multiplyScalar(this.touchData.x * speed));
 
             if (this.keys["w"]) this.camera.position.add(forward.clone().multiplyScalar(speed));
             if (this.keys["s"]) this.camera.position.add(forward.clone().negate().multiplyScalar(speed));
