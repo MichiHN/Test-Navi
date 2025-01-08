@@ -127,38 +127,39 @@ class Gallery {
     }
 
     setupEventListeners() {
+        // Handle keyboard events
         window.addEventListener("keydown", (e) => this.keys[e.key] = true);
         window.addEventListener("keyup", (e) => this.keys[e.key] = false);
+        
+        // Handle window resize
         window.addEventListener("resize", () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         });
     
-        document.addEventListener('click', () => {
+        // Add click and touch event listeners to the blocker
+        const blocker = document.getElementById('blocker');
+        const instructions = document.getElementById('instructions');
+    
+        const hideBlocker = () => {
             if (!this.isPointerLocked) {
                 this.enterPointerLock();
             }
-        });
-
-        document.getElementById("toggle-controls").addEventListener("click", () => {
-            this.toggleControls();
-        });
+        };
     
+        // Single event for both click and touchstart
+        blocker.addEventListener('click', hideBlocker);
+        blocker.addEventListener('touchstart', hideBlocker);
+    
+        // Pointer lock change
         document.addEventListener('pointerlockchange', () => {
             this.isPointerLocked = document.pointerLockElement === this.renderer.domElement;
-
+    
             if (this.isPointerLocked) {
-                this.isMovementEnabled = true;
-                document.addEventListener('mousemove', this.onMouseMove.bind(this));
-                document.getElementById('instructions').style.display = 'none';
-                document.getElementById('blocker').style.display = 'none';
+                this.onPointerLockEnable();
             } else {
-                this.isMovementEnabled = false;
-                this.resetKeys();
-                document.removeEventListener('mousemove', this.onMouseMove.bind(this));
-                document.getElementById('blocker').style.display = 'block';
-                document.getElementById('instructions').style.display = '';
+                this.onPointerLockDisable();
             }
         });
     
@@ -171,20 +172,42 @@ class Gallery {
             }
         });
     
-        const instructions = document.getElementById('instructions');
+        // Click instructions to enter pointer lock
         instructions.addEventListener('click', () => {
             this.enterPointerLock();
         });
+    
+        // Toggle controls button
+        const toggleControlsButton = document.getElementById("toggle-controls");
+        if (toggleControlsButton) {
+            toggleControlsButton.addEventListener("click", () => this.toggleControls());
+        }
     }
     
+    // Methods to handle pointer lock enable/disable
+    onPointerLockEnable() {
+        this.isMovementEnabled = true;
+        document.addEventListener('mousemove', this.onMouseMove.bind(this));
+        document.getElementById('instructions').style.display = 'none';
+        document.getElementById('blocker').style.display = 'none';
+    }
+    
+    onPointerLockDisable() {
+        this.isMovementEnabled = false;
+        this.resetKeys();
+        document.removeEventListener('mousemove', this.onMouseMove.bind(this));
+        document.getElementById('blocker').style.display = 'block';
+        document.getElementById('instructions').style.display = '';
+    }
+    
+    // Reset all keys
     resetKeys() {
-        // Reset all keys to false
         for (let key in this.keys) {
             if (this.keys.hasOwnProperty(key)) {
                 this.keys[key] = false;
             }
         }
-    }    
+    }
 
     nextTrack() {
         this.audioTracks[this.currentTrackIndex].pause();
