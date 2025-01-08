@@ -236,7 +236,7 @@ class Gallery {
     }
 
     setupJoystick() {
-        // Create joystick manager
+        // Create joystick zone dynamically
         const joystickZone = document.createElement('div');
         joystickZone.id = 'joystick-zone';
         joystickZone.style.position = 'absolute';
@@ -245,32 +245,25 @@ class Gallery {
         joystickZone.style.width = '150px';
         joystickZone.style.height = '150px';
         joystickZone.style.zIndex = '10';
-        joystickZone.style.display = 'none'; // Hidden initially
+        joystickZone.style.display = 'none'; // Initially hidden
         document.body.appendChild(joystickZone);
     
+        // Initialize joystick using nipplejs
         this.joystickManager = nipplejs.create({
             zone: joystickZone,
             mode: 'static',
-            position: { left: '50%', top: '50%' },
+            position: { left: '75px', top: '75px' },
             color: 'blue',
+            size: 150,
         });
     
         this.joystickManager.on('move', (evt, data) => {
-            const angle = data.angle.radian; // Use radians for movement calculation
-            const distance = data.distance / 50; // Normalize distance to a range of 0 to 1
-    
-            // Map joystick movement to camera's forward and right directions
-            const forward = new THREE.Vector3();
-            this.camera.getWorldDirection(forward);
-            forward.y = 0;
-            forward.normalize();
-    
-            const right = new THREE.Vector3();
-            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-    
-            // Scale by distance and joystick angle
-            this.touchData.x = (Math.cos(angle) * forward.x + Math.sin(angle) * right.x) * distance;
-            this.touchData.y = (Math.cos(angle) * forward.z + Math.sin(angle) * right.z) * distance;
+            if (data.distance > 0) {
+                const angle = data.angle.radian;
+                const normalizedDistance = Math.min(data.distance / 50, 1); // Limit distance for smoother control
+                this.touchData.x = Math.cos(angle) * normalizedDistance;
+                this.touchData.y = Math.sin(angle) * normalizedDistance;
+            }
         });
     
         this.joystickManager.on('end', () => {
@@ -281,16 +274,16 @@ class Gallery {
 
     toggleControls() {
         this.isJoystickActive = !this.isJoystickActive;
-
+    
         const joystickZone = document.getElementById('joystick-zone');
-        if (this.isJoystickActive) {
-            joystickZone.style.display = 'block';
-            document.getElementById("toggle-controls").textContent = "Switch to Keyboard/Mouse Controls";
-        } else {
-            joystickZone.style.display = 'none';
-            document.getElementById("toggle-controls").textContent = "Switch to Joystick Controls";
-        }
+        joystickZone.style.display = this.isJoystickActive ? 'block' : 'none';
+    
+        const toggleButton = document.getElementById("toggle-controls");
+        toggleButton.textContent = this.isJoystickActive
+            ? "Switch to Keyboard/Mouse Controls"
+            : "Switch to Joystick Controls";
     }
+    
 
 
     handleControls() {
@@ -299,11 +292,19 @@ class Gallery {
         const speed = this.keys["Shift"] ? 0.2 : 0.1;
     
         if (this.isJoystickActive) {
-            // Apply joystick movement to the camera position
-            this.camera.position.x += this.touchData.x * speed;
-            this.camera.position.z += this.touchData.y * speed;
+            // Use joystick input for movement
+            const forward = new THREE.Vector3();
+            this.camera.getWorldDirection(forward);
+            forward.y = 0; // Ignore vertical movement
+            forward.normalize();
+    
+            const right = new THREE.Vector3();
+            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+    
+            this.camera.position.add(forward.clone().multiplyScalar(this.touchData.y * speed));
+            this.camera.position.add(right.clone().multiplyScalar(this.touchData.x * speed));
         } else {
-            // Handle keyboard movement
+            // Use keyboard input for movement
             const forward = new THREE.Vector3();
             this.camera.getWorldDirection(forward);
             forward.y = 0;
@@ -337,6 +338,7 @@ class Gallery {
     
         this.checkCollision();
     }
+    
 
     checkCollision() {
         const halfWidth = this.gallerySize.width / 2;
