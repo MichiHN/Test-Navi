@@ -240,36 +240,32 @@ class Gallery {
         const joystickZone = document.createElement('div');
         joystickZone.id = 'joystick-zone';
         joystickZone.style.position = 'absolute';
-        joystickZone.style.bottom = '5%'; // Position relative to screen height
-        joystickZone.style.left = '5%'; // Position relative to screen width
-        joystickZone.style.width = '30%'; // Width relative to screen width
-        joystickZone.style.height = '30%'; // Height relative to screen height
+        joystickZone.style.bottom = '20px';
+        joystickZone.style.left = '20px';
+        joystickZone.style.width = '150px';
+        joystickZone.style.height = '150px';
         joystickZone.style.zIndex = '10';
         joystickZone.style.display = 'none'; // Initially hidden
         document.body.appendChild(joystickZone);
-    
-        // Calculate size dynamically based on the zone size
-        const joystickSize = Math.min(window.innerWidth, window.innerHeight) * 0.15;
     
         // Initialize joystick manager
         this.joystickManager = nipplejs.create({
             zone: joystickZone,
             mode: 'static',
-            position: { left: '50%', top: '50%' }, // Center joystick within the zone
-            size: joystickSize, // Dynamic size relative to screen dimensions
+            position: { left: '75px', top: '75px' }, // Center inside the joystick zone
+            size: 150, // Ensure correct size
             color: 'blue',
         });
     
         // Handle joystick movement
         this.joystickManager.on('move', (evt, data) => {
             if (data && data.angle) {
-                const angle = data.angle.degree;
+                const angle = data.angle.radian; // Use radians directly for Three.js calculations
                 const distance = data.distance;
     
-                // Calculate movement based on angle and distance
-                const radians = angle * (Math.PI / 180);
-                this.touchData.x = Math.cos(radians) * (distance / (joystickSize / 10));
-                this.touchData.y = Math.sin(radians) * (distance / (joystickSize / 10));
+                // Map joystick data to movement
+                this.touchData.x = Math.sin(angle) * (distance / 50); // Forward/Backward (z-axis)
+                this.touchData.y = -Math.cos(angle) * (distance / 50); // Left/Right (x-axis)
             }
         });
     
@@ -278,13 +274,8 @@ class Gallery {
             this.touchData.x = 0;
             this.touchData.y = 0;
         });
+    }
     
-        // Adjust size on window resize
-        window.addEventListener('resize', () => {
-            const newJoystickSize = Math.min(window.innerWidth, window.innerHeight) * 0.15;
-            this.joystickManager.options.size = newJoystickSize;
-        });
-    }    
     
 
     toggleControls() {
@@ -307,7 +298,6 @@ class Gallery {
         const speed = this.keys["Shift"] ? 0.2 : 0.1;
 
         if (this.isJoystickActive) {
-            // Handle joystick movement
             const forward = new THREE.Vector3();
             this.camera.getWorldDirection(forward);
             forward.y = 0; // Ignore vertical movement
@@ -316,8 +306,9 @@ class Gallery {
             const right = new THREE.Vector3();
             right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
         
-            this.camera.position.add(forward.clone().multiplyScalar(this.touchData.y * speed));
-            this.camera.position.add(right.clone().multiplyScalar(this.touchData.x * speed));
+            // Apply joystick movement
+            this.camera.position.add(forward.clone().multiplyScalar(this.touchData.x * speed));
+            this.camera.position.add(right.clone().multiplyScalar(this.touchData.y * speed));        
 
             if (this.keys["w"]) this.camera.position.add(forward.clone().multiplyScalar(speed));
             if (this.keys["s"]) this.camera.position.add(forward.clone().negate().multiplyScalar(speed));
