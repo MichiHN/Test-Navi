@@ -127,50 +127,52 @@ class Gallery {
     }
 
     setupEventListeners() {
-        // Handle keyboard events
         window.addEventListener("keydown", (e) => this.keys[e.key] = true);
         window.addEventListener("keyup", (e) => this.keys[e.key] = false);
-    
-        // Handle window resize
         window.addEventListener("resize", () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        const hideBlockerAndEnterPointerLock = () => {
+            this.isPointerLocked = true;
+            this.isMovementEnabled = true;
+            document.getElementById('instructions').style.display = 'none';
+            document.getElementById('blocker').style.display = 'none';
+            this.enterPointerLock();
+        };
     
-        // Blocker element
-        const blocker = document.getElementById('blocker');
-        const instructions = document.getElementById('instructions');
-    
-        const hideBlocker = (event) => {
-            event.preventDefault(); // Prevent default behavior like scrolling
+        // Add event listeners for clicks and touches
+        document.addEventListener('click', hideBlockerAndEnterPointerLock);
+        document.addEventListener('touchstart', hideBlockerAndEnterPointerLock);
+        
+        document.addEventListener('click', () => {
             if (!this.isPointerLocked) {
                 this.enterPointerLock();
             }
-        };
+        });
+
+        document.getElementById("toggle-controls").addEventListener("click", () => {
+            this.toggleControls();
+        });
     
-        // Attach both click and touchstart events
-        blocker.addEventListener('click', hideBlocker);
-        blocker.addEventListener('touchstart', hideBlocker, { passive: false }); // For touch
-    
-        // Pointer lock change
         document.addEventListener('pointerlockchange', () => {
             this.isPointerLocked = document.pointerLockElement === this.renderer.domElement;
-    
+
             if (this.isPointerLocked) {
-                this.onPointerLockEnable();
+                this.isMovementEnabled = true;
+                document.addEventListener('mousemove', this.onMouseMove.bind(this));
+                document.getElementById('instructions').style.display = 'none';
+                document.getElementById('blocker').style.display = 'none';
             } else {
-                this.onPointerLockDisable();
+                this.isMovementEnabled = false;
+                this.resetKeys();
+                document.removeEventListener('mousemove', this.onMouseMove.bind(this));
+                document.getElementById('blocker').style.display = 'block';
+                document.getElementById('instructions').style.display = '';
             }
         });
-    
-        // Instructions element click/touch
-        instructions.addEventListener('click', () => {
-            this.enterPointerLock();
-        });
-        instructions.addEventListener('touchstart', () => {
-            this.enterPointerLock();
-        }, { passive: false });
     
         // Music controls
         window.addEventListener("keydown", (e) => {
@@ -180,33 +182,21 @@ class Gallery {
                 this.previousTrack();
             }
         });
+    
+        const instructions = document.getElementById('instructions');
+    instructions.addEventListener('click', hideBlockerAndEnterPointerLock);
+        
     }
     
-    // Handle pointer lock enable/disable
-    onPointerLockEnable() {
-        this.isMovementEnabled = true;
-        document.addEventListener('mousemove', this.onMouseMove.bind(this));
-        document.getElementById('instructions').style.display = 'none';
-        document.getElementById('blocker').style.display = 'none';
-    }
-    
-    onPointerLockDisable() {
-        this.isMovementEnabled = false;
-        this.resetKeys();
-        document.removeEventListener('mousemove', this.onMouseMove.bind(this));
-        document.getElementById('blocker').style.display = 'block';
-        document.getElementById('instructions').style.display = '';
-    }
-    
-    // Reset all keys
     resetKeys() {
+        // Reset all keys to false
         for (let key in this.keys) {
             if (this.keys.hasOwnProperty(key)) {
                 this.keys[key] = false;
             }
         }
     }    
-    
+
     nextTrack() {
         this.audioTracks[this.currentTrackIndex].pause();
         this.currentTrackIndex = (this.currentTrackIndex + 1) % this.audioTracks.length;
