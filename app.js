@@ -135,8 +135,24 @@ class Gallery {
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         });
         window.addEventListener('orientationchange', () => {
-    // Adjust joystick position or any other UI elements if necessary
-        });
+    // Get the current orientation
+    const orientation = window.orientation;
+
+    // Adjust joystick position based on orientation
+    const joystickZone = document.getElementById('joystick-zone');
+
+    if (orientation === 0 || orientation === 180) {
+        // Portrait mode
+        joystickZone.style.bottom = '20px'; // Position joystick at the bottom
+        joystickZone.style.left = '20px';   // Position joystick on the left
+    } else if (orientation === 90 || orientation === -90) {
+        // Landscape mode
+        joystickZone.style.bottom = '20px'; // Position joystick at the bottom
+        joystickZone.style.left = '20px';   // Position joystick on the left
+    }
+
+    // You can also adjust other UI elements here if needed
+});
 
         const hideBlockerAndEnterPointerLock = () => {
             this.isPointerLocked = true;
