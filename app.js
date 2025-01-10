@@ -301,15 +301,15 @@ class Gallery {
     });
 
     this.joystickManager.on('move', (evt, data) => {
-    if (data && data.angle) {
-        const angle = data.angle.degree;
-        const distance = data.distance;
+        if (data && data.angle) {
+            const angle = data.angle.degree;
+            const distance = data.distance;
 
-        const radians = angle * (Math.PI / 180);
-        this.touchData.x = Math.cos(radians) * (distance / 50);
-        this.touchData.y = -Math.sin(radians) * (distance / 50); // Invert the y-axis
-    }
-});
+            const radians = angle * (Math.PI / 180);
+            this.touchData.x = Math.cos(radians) * (distance / 50);
+            this.touchData.y = -Math.sin(radians) * (distance / 50); // Invert the y-axis
+        }
+    });
 
     this.joystickManager.on('end', () => {
         this.touchData.x = 0;
@@ -317,9 +317,63 @@ class Gallery {
     });
 }
 
-    
+handleControls() {
+    if (!this.isMovementEnabled) return;
 
-    toggleControls() {
+    const speed = this.keys["Shift"] ? 0.2 : 0.1;
+
+    if (this.isJoystickActive) {
+        // Handle joystick movement
+        const forward = new THREE.Vector3();
+        this.camera.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
+
+        const right = new THREE.Vector3();
+        right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+        // Adjust camera position based on joystick touch data
+        const moveForward = forward.clone().multiplyScalar(this.touchData.y * speed);
+        const moveRight = right.clone().multiplyScalar(this.touchData.x * speed);
+        this.camera.position.add(moveForward).add(moveRight);
+    } else {
+        // Handle keyboard movement
+        const forward = new THREE.Vector3();
+        this.camera.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
+
+        const right = new THREE.Vector3();
+        right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+        if (this.keys["w"]) this.camera.position.add(forward.clone().multiplyScalar(speed));
+        if (this.keys["s"]) this.camera.position.add(forward.clone().negate().multiplyScalar(speed));
+        if (this.keys["a"]) this.camera.position.add(right.clone().negate().multiplyScalar(speed));
+        if (this.keys["d"]) this.camera.position.add(right.clone().multiplyScalar(speed));
+    }
+
+    // Handle jumping
+    if (this.keys[" "] && !this.isJumping) {
+        this.isJumping = true;
+        this.verticalVelocity = this.jumpStrength;
+    }
+
+    if (this.isJumping) {
+        this.verticalVelocity += this.gravity;
+        this.camera.position.y += this.verticalVelocity;
+
+        if (this.camera.position.y <= this.groundLevel) {
+            this.camera.position.y = this.groundLevel;
+            this.isJumping = false;
+            this.verticalVelocity = 0;
+        }
+    }
+
+    this.checkCollision();
+}
+
+    
+ toggleControls() {
         this.isJoystickActive = !this.isJoystickActive;
 
         const joystickZone = document.getElementById('joystick-zone');
@@ -331,63 +385,6 @@ class Gallery {
             document.getElementById("toggle-controls").textContent = "Switch to Joystick Controls";
         }
     }
-
-
-    handleControls() {
-        if (!this.isMovementEnabled) return;
-
-        const speed = this.keys["Shift"] ? 0.2 : 0.1;
-
-        if (this.isJoystickActive) {
-            // Handle joystick movement
-            const forward = new THREE.Vector3();
-            this.camera.getWorldDirection(forward);
-            forward.y = 0;
-            forward.normalize();
-        
-            const right = new THREE.Vector3();
-            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-        
-            // Adjust camera position based on joystick touch data
-            const moveForward = forward.clone().multiplyScalar(this.touchData.y * speed);
-            const moveRight = right.clone().multiplyScalar(this.touchData.x * speed);
-            this.camera.position.add(moveForward).add(moveRight);
-
-        } else { 
-            const forward = new THREE.Vector3();
-            this.camera.getWorldDirection(forward);
-            forward.y = 0;
-            forward.normalize();
-
-            const right = new THREE.Vector3();
-            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-                
-            if (this.keys["w"]) this.camera.position.add(forward.clone().multiplyScalar(speed));
-            if (this.keys["s"]) this.camera.position.add(forward.clone().negate().multiplyScalar(speed));
-            if (this.keys["a"]) this.camera.position.add(right.clone().negate().multiplyScalar(speed));
-            if (this.keys["d"]) this.camera.position.add(right.clone().multiplyScalar(speed));
-        }
-
-        // Handle jumping
-        if (this.keys[" "] && !this.isJumping) {
-            this.isJumping = true;
-            this.verticalVelocity = this.jumpStrength;
-        }
-
-        if (this.isJumping) {
-            this.verticalVelocity += this.gravity;
-            this.camera.position.y += this.verticalVelocity;
-
-            if (this.camera.position.y <= this.groundLevel) {
-                this.camera.position.y = this.groundLevel;
-                this.isJumping = false;
-                this.verticalVelocity = 0;
-            }
-        }
-
-        this.checkCollision();
-    }
-
     checkCollision() {
         const halfWidth = this.gallerySize.width / 2;
         const halfDepth = this.gallerySize.depth / 2;
