@@ -62,7 +62,6 @@ class Gallery {
         this.isJoystickActive = false; // Flag for joystick controls
         this.joystickManager = null; // Joystick manager instance
         this.touchData = { x: 0, y: 0 }; // Data for touch-based movement
-        this.orbitalTouchData = { x: 0, y: 0 }; // Separate touch data for orbital camera control
 
         this.init();
     }
@@ -71,7 +70,6 @@ class Gallery {
         this.createWalls();
         this.loadArtworks();
         this.setupEventListeners();
-        this.setupOrbitalCameraControls(); // Set up orbital camera controls
         this.setupJoystick(); // Initialize joystick setup
         this.animate();
     }
@@ -341,7 +339,6 @@ handleControls() {
         this.camera.position.add(moveForward).add(moveRight);
     } else {
         // Handle keyboard movement
-        this.updateOrbitalCamera();
         if (this.keys["w"]) this.camera.position.add(forward.clone().multiplyScalar(speed));
         if (this.keys["s"]) this.camera.position.add(forward.clone().negate().multiplyScalar(speed));
         if (this.keys["a"]) this.camera.position.add(right.clone().negate().multiplyScalar(speed));
@@ -368,72 +365,18 @@ handleControls() {
     this.checkCollision();
 }
 
-setupOrbitalCameraControls() {
-        const orbitalZone = document.createElement('div');
-        orbitalZone.id = 'orbital-zone';
-        orbitalZone.style.position = 'absolute';
-        orbitalZone.style.width = '100%';
-        orbitalZone.style.height = '100%';
-        orbitalZone.style.zIndex = '5';
-        orbitalZone.style.cursor = 'pointer';
-        orbitalZone.style.display = 'none'; // Hidden by default
-        document.body.appendChild(orbitalZone);
-
-        orbitalZone.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            this.orbitalTouchData.startX = touch.clientX;
-            this.orbitalTouchData.startY = touch.clientY;
-        });
-
-        orbitalZone.addEventListener('touchmove', (e) => {
-            const touch = e.touches[0];
-            const deltaX = touch.clientX - this.orbitalTouchData.startX;
-            const deltaY = touch.clientY - this.orbitalTouchData.startY;
-
-            this.orbitalTouchData.x += deltaX * 0.002;
-            this.orbitalTouchData.y += deltaY * 0.002;
-
-            this.orbitalTouchData.startX = touch.clientX;
-            this.orbitalTouchData.startY = touch.clientY;
-
-            this.updateOrbitalCamera();
-        });
-
-        orbitalZone.addEventListener('touchend', () => {
-            this.orbitalTouchData.x = 0;
-            this.orbitalTouchData.y = 0;
-        });
-    }
-
-    updateOrbitalCamera() {
-        const yawQuaternion = new THREE.Quaternion();
-        yawQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.orbitalTouchData.x);
-
-        const pitchQuaternion = new THREE.Quaternion();
-        pitchQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.orbitalTouchData.y);
-
-        const combinedQuaternion = new THREE.Quaternion();
-        combinedQuaternion.multiplyQuaternions(yawQuaternion, pitchQuaternion);
-        this.camera.quaternion.copy(combinedQuaternion);
-    }
-    
  toggleControls() {
         this.isJoystickActive = !this.isJoystickActive;
 
         const joystickZone = document.getElementById('joystick-zone');
-        const orbitalZone = document.getElementById('orbital-zone');
-
         if (this.isJoystickActive) {
             joystickZone.style.display = 'block';
-            orbitalZone.style.display = 'none';
-            document.getElementById("toggle-controls").textContent = "Switch to Orbital Camera Controls";
+            document.getElementById("toggle-controls").textContent = "Switch to Keyboard/Mouse Controls";
         } else {
             joystickZone.style.display = 'none';
-            orbitalZone.style.display = 'block';
             document.getElementById("toggle-controls").textContent = "Switch to Joystick Controls";
         }
     }
-    
     checkCollision() {
         const halfWidth = this.gallerySize.width / 2;
         const halfDepth = this.gallerySize.depth / 2;
