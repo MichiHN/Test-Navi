@@ -62,6 +62,7 @@ class Gallery {
         this.isJoystickActive = false; // Flag for joystick controls
         this.joystickManager = null; // Joystick manager instance
         this.touchData = { x: 0, y: 0 }; // Data for touch-based movement
+        
 
         this.init();
     }
@@ -71,6 +72,7 @@ class Gallery {
         this.loadArtworks();
         this.setupEventListeners();
         this.setupJoystick(); // Initialize joystick setup
+        this.setupTouchControls(); // Camera touch controls setup
         this.animate();
     }
 
@@ -261,6 +263,56 @@ class Gallery {
         this.camera.quaternion.copy(combinedQuaternion);
     }
 
+    setupTouchControls() {
+    // Camera orbit touch data
+    this.orbitTouchData = { x: 0, y: 0, isTouching: false };
+
+    // Touchstart for camera orbit controls
+    window.addEventListener('touchstart', (event) => {
+        if (this.isJoystickActive) return; // Ignore if joystick is active
+        if (event.touches.length === 1) {
+            this.orbitTouchData.isTouching = true;
+            this.orbitTouchData.x = event.touches[0].pageX;
+            this.orbitTouchData.y = event.touches[0].pageY;
+        }
+    });
+
+    // Touchmove for camera orbit controls
+    window.addEventListener('touchmove', (event) => {
+        if (!this.orbitTouchData.isTouching || this.isJoystickActive) return;
+
+        const deltaX = event.touches[0].pageX - this.orbitTouchData.x;
+        const deltaY = event.touches[0].pageY - this.orbitTouchData.y;
+
+        this.yaw -= deltaX * 0.001; // Adjust yaw sensitivity as needed
+        this.pitch -= deltaY * 0.001;
+
+        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+        this.updateCameraRotation();
+
+        this.orbitTouchData.x = event.touches[0].pageX;
+        this.orbitTouchData.y = event.touches[0].pageY;
+    });
+
+    // Touchend for camera orbit controls
+    window.addEventListener('touchend', () => {
+        this.orbitTouchData.isTouching = false;
+    });
+}
+
+updateCameraRotation() {
+    const yawQuaternion = new THREE.Quaternion();
+    yawQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+
+    const pitchQuaternion = new THREE.Quaternion();
+    pitchQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
+
+    const combinedQuaternion = new THREE.Quaternion();
+    combinedQuaternion.multiplyQuaternions(yawQuaternion, pitchQuaternion);
+    this.camera.quaternion.copy(combinedQuaternion);
+}
+
+
     setupJoystick() {
     const joystickZone = document.createElement('div');
     joystickZone.id = 'joystick-zone';
@@ -271,26 +323,6 @@ class Gallery {
     joystickZone.style.display = 'none'; // Initially hidden
     document.body.appendChild(joystickZone);
 
-    const updateJoystickPosition = () => {
-        const orientation = window.orientation;
-        if (orientation === 0 || orientation === 180) {
-            // Portrait mode
-            joystickZone.style.bottom = '20px';
-            joystickZone.style.left = '20px';
-        } else if (orientation === 90 || orientation === -90) {
-            // Landscape mode
-            joystickZone.style.bottom = '20px';
-            joystickZone.style.left = '20px';
-        }
-    };
-
-    // Initialize position based on current orientation
-    updateJoystickPosition();
-
-    // Reposition joystick on orientation change
-    window.addEventListener('orientationchange', updateJoystickPosition);
-
-    // Initialize joystick manager
     this.joystickManager = nipplejs.create({
         zone: joystickZone,
         mode: 'static',
@@ -317,6 +349,7 @@ class Gallery {
         this.touchData.y = 0;
     });
 }
+
 
     toggleControls() {
     this.isJoystickActive = !this.isJoystickActive;
