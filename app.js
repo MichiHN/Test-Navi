@@ -268,7 +268,6 @@ class Gallery {
     joystickZone.style.width = '150px';
     joystickZone.style.height = '150px';
     joystickZone.style.zIndex = '10';
-    joystickZone.style.display = 'none'; // Initially hidden
     document.body.appendChild(joystickZone);
 
     const updateJoystickPosition = () => {
