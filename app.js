@@ -134,7 +134,6 @@ class Gallery {
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
         window.addEventListener('orientationchange', () => {
     // Get the current orientation
     const orientation = window.orientation;
@@ -192,6 +191,13 @@ class Gallery {
                 document.getElementById('blocker').style.display = 'block';
                 document.getElementById('instructions').style.display = '';
             }
+            document.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Prevent default touch behavior
+            }, { passive: false });
+            
+            document.addEventListener('touchmove', (e) => {
+                e.preventDefault(); // Prevent default touch behavior
+            }, { passive: false });
         });
     
         // Music controls
@@ -262,11 +268,10 @@ class Gallery {
     joystickZone.style.width = '150px';
     joystickZone.style.height = '150px';
     joystickZone.style.zIndex = '10';
-    joystickZone.style.display = 'none'; // Initially hidden
     document.body.appendChild(joystickZone);
 
     const updateJoystickPosition = () => {
-        const orientation = window.orientation || 0;
+        const orientation = window.orientation;
         if (orientation === 0 || orientation === 180) {
             // Portrait mode
             joystickZone.style.bottom = '20px';
@@ -312,19 +317,21 @@ class Gallery {
     });
 }
 
-toggleControls() {
-    this.isJoystickActive = !this.isJoystickActive;
+    
 
-    const joystickZone = document.getElementById('joystick-zone');
-    const toggleButton = document.getElementById("toggle-controls");
-    if (this.isJoystickActive) {
-        joystickZone.style.display = 'block'; // Show joystick
-        toggleButton.textContent = "Switch to Keyboard/Mouse Controls";
-    } else {
-        joystickZone.style.display = 'none'; // Hide joystick
-        toggleButton.textContent = "Switch to Joystick Controls";
+    toggleControls() {
+        this.isJoystickActive = !this.isJoystickActive;
+
+        const joystickZone = document.getElementById('joystick-zone');
+        if (this.isJoystickActive) {
+            joystickZone.style.display = 'block';
+            document.getElementById("toggle-controls").textContent = "Switch to Keyboard/Mouse Controls";
+        } else {
+            joystickZone.style.display = 'none';
+            document.getElementById("toggle-controls").textContent = "Switch to Joystick Controls";
+        }
     }
-}
+
 
     handleControls() {
         if (!this.isMovementEnabled) return;
@@ -333,17 +340,18 @@ toggleControls() {
 
         if (this.isJoystickActive) {
             // Handle joystick movement
-            this.camera.position.x += this.touchData.x * speed;
-            this.camera.position.z += this.touchData.y * speed;
-        } else {
-            // Handle keyboard movement
             const forward = new THREE.Vector3();
             this.camera.getWorldDirection(forward);
-            forward.y = 0;
+            forward.y = 0; // Ignore vertical movement
             forward.normalize();
-
+    
             const right = new THREE.Vector3();
             right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+    
+            // Adjust camera position based on joystick touch data
+            const moveForward = forward.clone().multiplyScalar(this.touchData.y * speed);
+            const moveRight = right.clone().multiplyScalar(this.touchData.x * speed);
+            this.camera.position.add(moveForward).add(moveRight);
 
             if (this.keys["w"]) this.camera.position.add(forward.clone().multiplyScalar(speed));
             if (this.keys["s"]) this.camera.position.add(forward.clone().negate().multiplyScalar(speed));
