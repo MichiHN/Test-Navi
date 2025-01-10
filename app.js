@@ -71,6 +71,7 @@ class Gallery {
         this.loadArtworks();
         this.setupEventListeners();
         this.setupJoystick(); // Initialize joystick setup
+        this.setupTouchCameraControl(); // Initialize touch camera controls
         this.animate();
     }
 
@@ -310,7 +311,64 @@ class Gallery {
         this.touchData.x = 0;
         this.touchData.y = 0;
     });
-}   
+}
+
+setupTouchCameraControl() {
+    let isTouching = false;
+    let lastTouch = { x: 0, y: 0 };
+
+    // Touch start
+    document.addEventListener('touchstart', (event) => {
+        const touch = event.touches[0];
+
+        // Ignore touches in the joystick zone
+        const joystickZone = document.getElementById('joystick-zone');
+        const rect = joystickZone.getBoundingClientRect();
+        if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+            touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+            return;
+        }
+
+        isTouching = true;
+        lastTouch.x = touch.clientX;
+        lastTouch.y = touch.clientY;
+    });
+
+    // Touch move
+    document.addEventListener('touchmove', (event) => {
+        if (!isTouching) return;
+
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - lastTouch.x;
+        const deltaY = touch.clientY - lastTouch.y;
+
+        this.yaw -= deltaX * 0.005; // Adjust yaw sensitivity
+        this.pitch -= deltaY * 0.005; // Adjust pitch sensitivity
+
+        // Clamp the pitch
+        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+
+        // Apply the camera rotation
+        const yawQuaternion = new THREE.Quaternion();
+        yawQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+
+        const pitchQuaternion = new THREE.Quaternion();
+        pitchQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
+
+        const combinedQuaternion = new THREE.Quaternion();
+        combinedQuaternion.multiplyQuaternions(yawQuaternion, pitchQuaternion);
+        this.camera.quaternion.copy(combinedQuaternion);
+
+        lastTouch.x = touch.clientX;
+        lastTouch.y = touch.clientY;
+    });
+
+    // Touch end
+    document.addEventListener('touchend', () => {
+        isTouching = false;
+    });
+}
+
 
     toggleControls() {
     this.isJoystickActive = !this.isJoystickActive;
