@@ -353,6 +353,15 @@ class Gallery {
             const moveRight = right.clone().multiplyScalar(this.touchData.x * speed);
             this.camera.position.add(moveForward).add(moveRight);
 
+        } else { 
+            const forward = new THREE.Vector3();
+            this.camera.getWorldDirection(forward);
+            forward.y = 0;
+            forward.normalize();
+
+            const right = new THREE.Vector3();
+            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+                
             if (this.keys["w"]) this.camera.position.add(forward.clone().multiplyScalar(speed));
             if (this.keys["s"]) this.camera.position.add(forward.clone().negate().multiplyScalar(speed));
             if (this.keys["a"]) this.camera.position.add(right.clone().negate().multiplyScalar(speed));
