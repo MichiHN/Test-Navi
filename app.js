@@ -172,6 +172,13 @@ class Gallery {
                 document.getElementById('blocker').style.display = 'block';
                 document.getElementById('instructions').style.display = '';
             }
+            document.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Prevent default touch behavior
+            }, { passive: false });
+            
+            document.addEventListener('touchmove', (e) => {
+                e.preventDefault(); // Prevent default touch behavior
+            }, { passive: false });
         });
     
         // Music controls
@@ -255,6 +262,8 @@ class Gallery {
             position: { left: '75px', top: '75px' }, // Center inside the joystick zone
             size: 150, // Ensure correct size
             color: 'blue',
+            restOpacity: 0.5, // Adjust opacity when joystick is not in use
+            fadeTime: 100, // Time to fade in/out
         });
     
         // Handle joystick movement
