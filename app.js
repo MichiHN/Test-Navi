@@ -272,7 +272,7 @@ class Gallery {
     document.body.appendChild(joystickZone);
 
     const updateJoystickPosition = () => {
-        const orientation = window.orientation;
+        const orientation = window.orientation || 0;
         if (orientation === 0 || orientation === 180) {
             // Portrait mode
             joystickZone.style.bottom = '20px';
@@ -316,21 +316,22 @@ class Gallery {
         this.touchData.x = 0;
         this.touchData.y = 0;
     });
-}   
+}
 
-
-    toggleControls() {
+toggleControls() {
     this.isJoystickActive = !this.isJoystickActive;
 
     const joystickZone = document.getElementById('joystick-zone');
+    const toggleButton = document.getElementById("toggle-controls");
     if (this.isJoystickActive) {
-        joystickZone.style.display = 'block';
-        document.getElementById("toggle-controls").textContent = "Switch to Keyboard/Mouse Controls";
+        joystickZone.style.display = 'block'; // Show joystick
+        toggleButton.textContent = "Switch to Keyboard/Mouse Controls";
     } else {
-        joystickZone.style.display = 'none';
-        document.getElementById("toggle-controls").textContent = "Switch to Joystick Controls";
+        joystickZone.style.display = 'none'; // Hide joystick
+        toggleButton.textContent = "Switch to Joystick Controls";
     }
 }
+
 
 
     handleControls() {
