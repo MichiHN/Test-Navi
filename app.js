@@ -271,26 +271,6 @@ class Gallery {
     joystickZone.style.display = 'none'; // Initially hidden
     document.body.appendChild(joystickZone);
 
-    const updateJoystickPosition = () => {
-        const orientation = window.orientation || 0;
-        if (orientation === 0 || orientation === 180) {
-            // Portrait mode
-            joystickZone.style.bottom = '20px';
-            joystickZone.style.left = '20px';
-        } else if (orientation === 90 || orientation === -90) {
-            // Landscape mode
-            joystickZone.style.bottom = '20px';
-            joystickZone.style.left = '20px';
-        }
-    };
-
-    // Initialize position based on current orientation
-    updateJoystickPosition();
-
-    // Reposition joystick on orientation change
-    window.addEventListener('orientationchange', updateJoystickPosition);
-
-    // Initialize joystick manager
     this.joystickManager = nipplejs.create({
         zone: joystickZone,
         mode: 'static',
@@ -298,17 +278,31 @@ class Gallery {
         size: 150,
         color: 'blue',
         restOpacity: 0.5,
-        fadeTime: 100,
     });
 
     this.joystickManager.on('move', (evt, data) => {
         if (data && data.angle) {
-            const angle = data.angle.degree;
+            const angle = data.angle.radian;
             const distance = data.distance;
 
-            const radians = angle * (Math.PI / 180);
-            this.touchData.x = Math.cos(radians) * (distance / 50);
-            this.touchData.y = Math.sin(radians) * (distance / 50);
+            // Movement data
+            this.touchData.x = Math.cos(angle) * (distance / 50);
+            this.touchData.y = Math.sin(angle) * (distance / 50);
+
+            // Look data
+            this.yaw += this.touchData.x * 0.02; // Adjust sensitivity
+            this.pitch -= this.touchData.y * 0.02; // Adjust sensitivity
+            this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch)); // Clamp pitch
+
+            const yawQuaternion = new THREE.Quaternion();
+            yawQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+
+            const pitchQuaternion = new THREE.Quaternion();
+            pitchQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
+
+            const combinedQuaternion = new THREE.Quaternion();
+            combinedQuaternion.multiplyQuaternions(yawQuaternion, pitchQuaternion);
+            this.camera.quaternion.copy(combinedQuaternion);
         }
     });
 
@@ -316,79 +310,76 @@ class Gallery {
         this.touchData.x = 0;
         this.touchData.y = 0;
     });
-}
+}   
 
-toggleControls() {
+    toggleControls() {
     this.isJoystickActive = !this.isJoystickActive;
 
     const joystickZone = document.getElementById('joystick-zone');
-    const toggleButton = document.getElementById("toggle-controls");
     if (this.isJoystickActive) {
-        joystickZone.style.display = 'block'; // Show joystick
-        toggleButton.textContent = "Switch to Keyboard/Mouse Controls";
+        joystickZone.style.display = 'block';
+        document.getElementById("toggle-controls").textContent = "Switch to Keyboard/Mouse Controls";
     } else {
-        joystickZone.style.display = 'none'; // Hide joystick
-        toggleButton.textContent = "Switch to Joystick Controls";
+        joystickZone.style.display = 'none';
+        document.getElementById("toggle-controls").textContent = "Switch to Joystick Controls";
     }
 }
 
-
-
     handleControls() {
-        if (!this.isMovementEnabled) return;
+    if (!this.isMovementEnabled) return;
 
-        const speed = this.keys["Shift"] ? 0.2 : 0.1;
+    const speed = this.keys["Shift"] ? 0.2 : 0.1;
 
-        if (this.isJoystickActive) {
-            // Handle joystick movement
-            const forward = new THREE.Vector3();
-            this.camera.getWorldDirection(forward);
-            forward.y = 0; // Ignore vertical movement
-            forward.normalize();
-    
-            const right = new THREE.Vector3();
-            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-    
-            // Adjust camera position based on joystick touch data
-            const moveForward = forward.clone().multiplyScalar(this.touchData.y * speed);
-            const moveRight = right.clone().multiplyScalar(this.touchData.x * speed);
-            this.camera.position.add(moveForward).add(moveRight);
+    if (this.isJoystickActive) {
+        // Handle joystick movement
+        const forward = new THREE.Vector3();
+        this.camera.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
 
-        } else { 
-            const forward = new THREE.Vector3();
-            this.camera.getWorldDirection(forward);
-            forward.y = 0;
-            forward.normalize();
+        const right = new THREE.Vector3();
+        right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
-            const right = new THREE.Vector3();
-            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-                
-            if (this.keys["w"]) this.camera.position.add(forward.clone().multiplyScalar(speed));
-            if (this.keys["s"]) this.camera.position.add(forward.clone().negate().multiplyScalar(speed));
-            if (this.keys["a"]) this.camera.position.add(right.clone().negate().multiplyScalar(speed));
-            if (this.keys["d"]) this.camera.position.add(right.clone().multiplyScalar(speed));
-        }
+        // Adjust camera position based on joystick touch data
+        const moveForward = forward.clone().multiplyScalar(this.touchData.y * speed);
+        const moveRight = right.clone().multiplyScalar(this.touchData.x * speed);
+        this.camera.position.add(moveForward).add(moveRight);
+    } else {
+        // Handle keyboard movement
+        const forward = new THREE.Vector3();
+        this.camera.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
 
-        // Handle jumping
-        if (this.keys[" "] && !this.isJumping) {
-            this.isJumping = true;
-            this.verticalVelocity = this.jumpStrength;
-        }
+        const right = new THREE.Vector3();
+        right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
-        if (this.isJumping) {
-            this.verticalVelocity += this.gravity;
-            this.camera.position.y += this.verticalVelocity;
-
-            if (this.camera.position.y <= this.groundLevel) {
-                this.camera.position.y = this.groundLevel;
-                this.isJumping = false;
-                this.verticalVelocity = 0;
-            }
-        }
-
-        this.checkCollision();
+        if (this.keys["w"]) this.camera.position.add(forward.clone().multiplyScalar(speed));
+        if (this.keys["s"]) this.camera.position.add(forward.clone().negate().multiplyScalar(speed));
+        if (this.keys["a"]) this.camera.position.add(right.clone().negate().multiplyScalar(speed));
+        if (this.keys["d"]) this.camera.position.add(right.clone().multiplyScalar(speed));
     }
 
+    // Handle jumping
+    if (this.keys[" "] && !this.isJumping) {
+        this.isJumping = true;
+        this.verticalVelocity = this.jumpStrength;
+    }
+
+    if (this.isJumping) {
+        this.verticalVelocity += this.gravity;
+        this.camera.position.y += this.verticalVelocity;
+
+        if (this.camera.position.y <= this.groundLevel) {
+            this.camera.position.y = this.groundLevel;
+            this.isJumping = false;
+            this.verticalVelocity = 0;
+        }
+    }
+
+    this.checkCollision();
+}
+    
     checkCollision() {
         const halfWidth = this.gallerySize.width / 2;
         const halfDepth = this.gallerySize.depth / 2;
