@@ -334,22 +334,26 @@ class Gallery {
 
 
     handleControls() {
+        if (!this.isMovementEnabled) return;
+
+        const speed = this.keys["Shift"] ? 0.2 : 0.1;
+
         if (this.isJoystickActive) {
-    // Handle joystick movement
-    const forward = new THREE.Vector3();
-    this.camera.getWorldDirection(forward);
-    forward.y = 0;
-    forward.normalize();
+            // Handle joystick movement
+            const forward = new THREE.Vector3();
+            this.camera.getWorldDirection(forward);
+            forward.y = 0;
+            forward.normalize();
+        
+            const right = new THREE.Vector3();
+            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+        
+            // Adjust camera position based on joystick touch data
+            const moveForward = forward.clone().multiplyScalar(this.touchData.y * speed);
+            const moveRight = right.clone().multiplyScalar(this.touchData.x * speed);
+            this.camera.position.add(moveForward).add(moveRight);
 
-    const right = new THREE.Vector3();
-    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-
-    // Adjust camera position based on joystick touch data
-    const moveForward = forward.clone().multiplyScalar(this.touchData.y * speed);
-    const moveRight = right.clone().multiplyScalar(this.touchData.x * speed);
-    this.camera.position.add(moveForward).add(moveRight);
-}
- else { 
+        } else { 
             const forward = new THREE.Vector3();
             this.camera.getWorldDirection(forward);
             forward.y = 0;
