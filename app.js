@@ -318,6 +318,7 @@ class Gallery {
     });
 }   
 
+
     toggleControls() {
     this.isJoystickActive = !this.isJoystickActive;
 
@@ -330,6 +331,7 @@ class Gallery {
         document.getElementById("toggle-controls").textContent = "Switch to Joystick Controls";
     }
 }
+
 
     handleControls() {
         if (!this.isMovementEnabled) return;
