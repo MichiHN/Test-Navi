@@ -318,6 +318,7 @@ class Gallery {
     });
 }
 
+
     toggleControls() {
     this.isJoystickActive = !this.isJoystickActive;
 
