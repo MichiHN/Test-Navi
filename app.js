@@ -301,15 +301,15 @@ class Gallery {
     });
 
     this.joystickManager.on('move', (evt, data) => {
-        if (data && data.angle) {
-            const angle = data.angle.degree;
-            const distance = data.distance;
+    if (data && data.angle) {
+        const angle = data.angle.degree;
+        const distance = data.distance;
 
-            const radians = angle * (Math.PI / 180);
-            this.touchData.x = Math.cos(radians) * (distance / 50);
-            this.touchData.y = Math.sin(radians) * (distance / 50);
-        }
-    });
+        const radians = angle * (Math.PI / 180);
+        this.touchData.x = Math.cos(radians) * (distance / 50);
+        this.touchData.y = -Math.sin(radians) * (distance / 50); // Invert the y-axis
+    }
+});
 
     this.joystickManager.on('end', () => {
         this.touchData.x = 0;
@@ -334,26 +334,22 @@ class Gallery {
 
 
     handleControls() {
-        if (!this.isMovementEnabled) return;
-
-        const speed = this.keys["Shift"] ? 0.2 : 0.1;
-
         if (this.isJoystickActive) {
-            // Handle joystick movement
-            const forward = new THREE.Vector3();
-            this.camera.getWorldDirection(forward);
-            forward.y = 0; // Ignore vertical movement
-            forward.normalize();
-    
-            const right = new THREE.Vector3();
-            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-    
-            // Adjust camera position based on joystick touch data
-            const moveForward = forward.clone().multiplyScalar(this.touchData.y * speed);
-            const moveRight = right.clone().multiplyScalar(this.touchData.x * speed);
-            this.camera.position.add(moveForward).add(moveRight);
+    // Handle joystick movement
+    const forward = new THREE.Vector3();
+    this.camera.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
 
-        } else { 
+    const right = new THREE.Vector3();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    // Adjust camera position based on joystick touch data
+    const moveForward = forward.clone().multiplyScalar(this.touchData.y * speed);
+    const moveRight = right.clone().multiplyScalar(this.touchData.x * speed);
+    this.camera.position.add(moveForward).add(moveRight);
+}
+ else { 
             const forward = new THREE.Vector3();
             this.camera.getWorldDirection(forward);
             forward.y = 0;
