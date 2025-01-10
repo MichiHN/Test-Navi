@@ -262,48 +262,61 @@ class Gallery {
     }
 
     setupJoystick() {
-        // Create joystick zone element
-        const joystickZone = document.createElement('div');
-        joystickZone.id = 'joystick-zone';
-        joystickZone.style.position = 'absolute';
-        joystickZone.style.bottom = '20px';
-        joystickZone.style.left = '20px';
-        joystickZone.style.width = '150px';
-        joystickZone.style.height = '150px';
-        joystickZone.style.zIndex = '10';
-        joystickZone.style.display = 'none'; // Initially hidden
-        document.body.appendChild(joystickZone);
-    
-        // Initialize joystick manager
-        this.joystickManager = nipplejs.create({
-            zone: joystickZone,
-            mode: 'static',
-            position: { left: '75px', top: '75px' }, // Center inside the joystick zone
-            size: 150, // Ensure correct size
-            color: 'blue',
-            restOpacity: 0.5, // Adjust opacity when joystick is not in use
-            fadeTime: 100, // Time to fade in/out
-        });
-    
-        // Handle joystick movement
-        this.joystickManager.on('move', (evt, data) => {
-            if (data && data.angle) {
-                const angle = data.angle.degree;
-                const distance = data.distance;
-    
-                // Calculate movement based on angle and distance
-                const radians = angle * (Math.PI / 180);
-                this.touchData.x = Math.cos(radians) * (distance / 50);
-                this.touchData.y = Math.sin(radians) * (distance / 50);
-            }
-        });
-    
-        // Reset touch data when joystick is released
-        this.joystickManager.on('end', () => {
-            this.touchData.x = 0;
-            this.touchData.y = 0;
-        });
-    }
+    const joystickZone = document.createElement('div');
+    joystickZone.id = 'joystick-zone';
+    joystickZone.style.position = 'absolute';
+    joystickZone.style.width = '150px';
+    joystickZone.style.height = '150px';
+    joystickZone.style.zIndex = '10';
+    document.body.appendChild(joystickZone);
+
+    const updateJoystickPosition = () => {
+        const orientation = window.orientation;
+        if (orientation === 0 || orientation === 180) {
+            // Portrait mode
+            joystickZone.style.bottom = '20px';
+            joystickZone.style.left = '20px';
+        } else if (orientation === 90 || orientation === -90) {
+            // Landscape mode
+            joystickZone.style.bottom = '20px';
+            joystickZone.style.left = '20px';
+        }
+    };
+
+    // Initialize position based on current orientation
+    updateJoystickPosition();
+
+    // Reposition joystick on orientation change
+    window.addEventListener('orientationchange', updateJoystickPosition);
+
+    // Initialize joystick manager
+    this.joystickManager = nipplejs.create({
+        zone: joystickZone,
+        mode: 'static',
+        position: { left: '75px', top: '75px' },
+        size: 150,
+        color: 'blue',
+        restOpacity: 0.5,
+        fadeTime: 100,
+    });
+
+    this.joystickManager.on('move', (evt, data) => {
+        if (data && data.angle) {
+            const angle = data.angle.degree;
+            const distance = data.distance;
+
+            const radians = angle * (Math.PI / 180);
+            this.touchData.x = Math.cos(radians) * (distance / 50);
+            this.touchData.y = Math.sin(radians) * (distance / 50);
+        }
+    });
+
+    this.joystickManager.on('end', () => {
+        this.touchData.x = 0;
+        this.touchData.y = 0;
+    });
+}
+
     
 
     toggleControls() {
