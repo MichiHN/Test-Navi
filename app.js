@@ -134,6 +134,9 @@ class Gallery {
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         });
+        window.addEventListener('orientationchange', () => {
+    // Adjust joystick position or any other UI elements if necessary
+        });
 
         const hideBlockerAndEnterPointerLock = () => {
             this.isPointerLocked = true;
