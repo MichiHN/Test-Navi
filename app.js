@@ -268,9 +268,28 @@ class Gallery {
     joystickZone.style.width = '150px';
     joystickZone.style.height = '150px';
     joystickZone.style.zIndex = '10';
-    joystickZone.style.display = 'none'; // Initially hidden
     document.body.appendChild(joystickZone);
 
+    const updateJoystickPosition = () => {
+        const orientation = window.orientation;
+        if (orientation === 0 || orientation === 180) {
+            // Portrait mode
+            joystickZone.style.bottom = '20px';
+            joystickZone.style.left = '20px';
+        } else if (orientation === 90 || orientation === -90) {
+            // Landscape mode
+            joystickZone.style.bottom = '20px';
+            joystickZone.style.left = '20px';
+        }
+    };
+
+    // Initialize position based on current orientation
+    updateJoystickPosition();
+
+    // Reposition joystick on orientation change
+    window.addEventListener('orientationchange', updateJoystickPosition);
+
+    // Initialize joystick manager
     this.joystickManager = nipplejs.create({
         zone: joystickZone,
         mode: 'static',
@@ -278,31 +297,17 @@ class Gallery {
         size: 150,
         color: 'blue',
         restOpacity: 0.5,
+        fadeTime: 100,
     });
 
     this.joystickManager.on('move', (evt, data) => {
         if (data && data.angle) {
-            const angle = data.angle.radian;
+            const angle = data.angle.degree;
             const distance = data.distance;
 
-            // Movement data
-            this.touchData.x = Math.cos(angle) * (distance / 50);
-            this.touchData.y = Math.sin(angle) * (distance / 50);
-
-            // Look data
-            this.yaw += this.touchData.x * 0.02; // Adjust sensitivity
-            this.pitch -= this.touchData.y * 0.02; // Adjust sensitivity
-            this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch)); // Clamp pitch
-
-            const yawQuaternion = new THREE.Quaternion();
-            yawQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
-
-            const pitchQuaternion = new THREE.Quaternion();
-            pitchQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
-
-            const combinedQuaternion = new THREE.Quaternion();
-            combinedQuaternion.multiplyQuaternions(yawQuaternion, pitchQuaternion);
-            this.camera.quaternion.copy(combinedQuaternion);
+            const radians = angle * (Math.PI / 180);
+            this.touchData.x = Math.cos(radians) * (distance / 50);
+            this.touchData.y = Math.sin(radians) * (distance / 50);
         }
     });
 
@@ -310,7 +315,7 @@ class Gallery {
         this.touchData.x = 0;
         this.touchData.y = 0;
     });
-}   
+}
 
     toggleControls() {
     this.isJoystickActive = !this.isJoystickActive;
