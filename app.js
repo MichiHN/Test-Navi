@@ -172,10 +172,6 @@ class Gallery {
             }
         });
 
-        document.getElementById("toggle-controls").addEventListener("click", () => {
-            this.toggleControls();
-        });
-    
         document.addEventListener('pointerlockchange', () => {
             this.isPointerLocked = document.pointerLockElement === this.renderer.domElement;
 
@@ -365,18 +361,6 @@ handleControls() {
     this.checkCollision();
 }
 
- toggleControls() {
-        this.isJoystickActive = !this.isJoystickActive;
-
-        const joystickZone = document.getElementById('joystick-zone');
-        if (this.isJoystickActive) {
-            joystickZone.style.display = 'block';
-            document.getElementById("toggle-controls").textContent = "Switch to Keyboard/Mouse Controls";
-        } else {
-            joystickZone.style.display = 'none';
-            document.getElementById("toggle-controls").textContent = "Switch to Joystick Controls";
-        }
-    }
     checkCollision() {
         const halfWidth = this.gallerySize.width / 2;
         const halfDepth = this.gallerySize.depth / 2;
