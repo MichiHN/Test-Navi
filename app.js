@@ -45,6 +45,7 @@ class Gallery {
             { file: "artworks/art10.jpg", position: [0, 2, 12] } 
         ];
 
+        
         this.keys = {};
         this.mouse = { x: 0, y: 0 };
         this.isPointerLocked = false;
@@ -62,7 +63,9 @@ class Gallery {
         this.isJoystickActive = false; // Flag for joystick controls
         this.joystickManager = null; // Joystick manager instance
         this.touchData = { x: 0, y: 0 }; // Data for touch-based movement
+        this.firstPersonTouchData = { yaw: 0, pitch: 0 }; // Touch data for first-person camera on mobile
 
+        
         this.init();
     }
 
@@ -71,6 +74,7 @@ class Gallery {
         this.loadArtworks();
         this.setupEventListeners();
         this.setupJoystick(); // Initialize joystick setup
+        this.setupFirstPersonTouch(); // Initialize touch for first-person camera
         this.animate();
     }
 
@@ -172,10 +176,6 @@ class Gallery {
             }
         });
 
-        document.getElementById("toggle-controls").addEventListener("click", () => {
-            this.toggleControls();
-        });
-    
         document.addEventListener('pointerlockchange', () => {
             this.isPointerLocked = document.pointerLockElement === this.renderer.domElement;
 
@@ -191,13 +191,6 @@ class Gallery {
                 document.getElementById('blocker').style.display = 'block';
                 document.getElementById('instructions').style.display = '';
             }
-            document.addEventListener('touchstart', (e) => {
-                e.preventDefault(); // Prevent default touch behavior
-            }, { passive: false });
-            
-            document.addEventListener('touchmove', (e) => {
-                e.preventDefault(); // Prevent default touch behavior
-            }, { passive: false });
         });
     
         // Music controls
@@ -210,10 +203,86 @@ class Gallery {
         });
     
         const instructions = document.getElementById('instructions');
-    instructions.addEventListener('click', hideBlockerAndEnterPointerLock);
-        
+        instructions.addEventListener('click', hideBlockerAndEnterPointerLock);
     }
+
+    setupFirstPersonTouch() {
+        let lastTouchX = null;
+        let lastTouchY = null;
+
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+            }
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                const deltaX = e.touches[0].clientX - lastTouchX;
+                const deltaY = e.touches[0].clientY - lastTouchY;
+
+                this.firstPersonTouchData.yaw -= deltaX * 0.001;
+                this.firstPersonTouchData.pitch -= deltaY * 0.001;
+
+                this.firstPersonTouchData.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.firstPersonTouchData.pitch));
+
+                const yawQuaternion = new THREE.Quaternion();
+                yawQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.firstPersonTouchData.yaw);
+
+                const pitchQuaternion = new THREE.Quaternion();
+                pitchQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.firstPersonTouchData.pitch);
+
+                const combinedQuaternion = new THREE.Quaternion();
+                combinedQuaternion.multiplyQuaternions(yawQuaternion, pitchQuaternion);
+                this.camera.quaternion.copy(combinedQuaternion);
+
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+            }
+        });
     
+        // ** New event listener for the image uploader **
+        const imageUploader = document.getElementById('image-uploader');
+        imageUploader.addEventListener('change', (e) => this.addImagesFromFileInput(e.target.files));
+    }
+
+    addImagesFromFileInput(files) {
+        const loader = new THREE.TextureLoader();
+    
+        // Initialize state for tracking the next available position
+        if (!this.lastImagePosition) {
+            this.lastImagePosition = new THREE.Vector3(-this.gallerySize.width / 2 + 3, 2, -this.gallerySize.depth / 2 + 0.2);
+        }
+    
+        [...files].forEach((file) => {
+            const reader = new FileReader();
+    
+            reader.onload = (e) => {
+                loader.load(e.target.result, (texture) => {
+                    const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                    const plane = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), material);
+    
+                    // Set position based on the last added image
+                    plane.position.copy(this.lastImagePosition);
+    
+                    // Update position for the next image
+                    this.lastImagePosition.x += 4; // Space between images
+    
+                    // Check if we need to move to a new row
+                    if (this.lastImagePosition.x > this.gallerySize.width / 2 - 3) {
+                        this.lastImagePosition.x = -this.gallerySize.width / 2 + 3; // Reset X position
+                        this.lastImagePosition.z += 5; // Move Z position forward
+                    }
+    
+                    this.scene.add(plane);
+                });
+            };
+    
+            reader.readAsDataURL(file);
+        });
+    }
+
     resetKeys() {
         // Reset all keys to false
         for (let key in this.keys) {
@@ -322,6 +391,7 @@ class Gallery {
 handleControls() {
     if (!this.isMovementEnabled) return;
 
+    // Set the speed based on whether the Shift key is pressed
     const speed = this.keys["Shift"] ? 0.2 : 0.1;
 
     const forward = new THREE.Vector3();
@@ -332,20 +402,21 @@ handleControls() {
     const right = new THREE.Vector3();
     right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
+    // Joystick control
     if (this.isJoystickActive) {
         // Adjust camera position based on joystick touch data
         const moveForward = forward.clone().multiplyScalar(this.touchData.y * speed);
         const moveRight = right.clone().multiplyScalar(this.touchData.x * speed);
         this.camera.position.add(moveForward).add(moveRight);
     } else {
-        // Handle keyboard movement
+        // Keyboard movement (WASD)
         if (this.keys["w"]) this.camera.position.add(forward.clone().multiplyScalar(speed));
         if (this.keys["s"]) this.camera.position.add(forward.clone().negate().multiplyScalar(speed));
         if (this.keys["a"]) this.camera.position.add(right.clone().negate().multiplyScalar(speed));
         if (this.keys["d"]) this.camera.position.add(right.clone().multiplyScalar(speed));
     }
 
-    // Handle jumping
+    // Handle jumping (Spacebar)
     if (this.keys[" "] && !this.isJumping) {
         this.isJumping = true;
         this.verticalVelocity = this.jumpStrength;
@@ -362,28 +433,21 @@ handleControls() {
         }
     }
 
+    // Check for collision and reset position if out of bounds
     this.checkCollision();
 }
 
- toggleControls() {
-        this.isJoystickActive = !this.isJoystickActive;
 
-        const joystickZone = document.getElementById('joystick-zone');
-        if (this.isJoystickActive) {
-            joystickZone.style.display = 'block';
-            document.getElementById("toggle-controls").textContent = "Switch to Keyboard/Mouse Controls";
-        } else {
-            joystickZone.style.display = 'none';
-            document.getElementById("toggle-controls").textContent = "Switch to Joystick Controls";
-        }
-    }
     checkCollision() {
         const halfWidth = this.gallerySize.width / 2;
         const halfDepth = this.gallerySize.depth / 2;
 
-        if (this.camera.position.x < -halfWidth || this.camera.position.x > halfWidth ||
-            this.camera.position.z < -halfDepth || this.camera.position.z > halfDepth) {
-            
+        if (
+            this.camera.position.x < -halfWidth ||
+            this.camera.position.x > halfWidth ||
+            this.camera.position.z < -halfDepth ||
+            this.camera.position.z > halfDepth
+        ) {
             this.camera.position.copy(this.spawnPoint);
         }
     }
