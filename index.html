@@ -9,28 +9,23 @@
 <body>
     <div id="blocker">
         <div id="instructions">
-            <p style="font-size:36px">
-                Click to Enter
-            </p>
+            <p style="font-size:36px">Click to Enter</p>
             <p>
-                Move: WASD<br/>
-                <br/>
-                Jump: SPACE<br/>
-                <br/>
-                Look: MOUSE<br/>
-                <br/>
-                Sprint: SHIFT<br/>
-                <br/>
-                Play/Previous Music: P<br/>
-                <br/>
+                Move: WASD<br/><br/>
+                Jump: SPACE<br/><br/>
+                Look: MOUSE<br/><br/>
+                Sprint: SHIFT<br/><br/>
+                Play/Previous Music: P<br/><br/>
                 Next Music: N
             </p>
         </div>
+        <!-- Button for adding images -->
+        <input type="file" id="image-uploader" accept="image/*" multiple style="position: absolute; top: 10px; right: 10px; z-index: 10;" />
     </div>
-    <button id="toggle-controls">Switch to Joystick Controls</button>
     <div id="gallery-container"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.8.3/dist/nipplejs.min.js"></script>
     <script src="app.js"></script>
 </body>
+
 </html>
